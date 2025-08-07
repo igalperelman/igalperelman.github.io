@@ -1,285 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scaling Showdown: Redis vs ElastiCache</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 2rem;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            text-align: center;
-        }
-        .title {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: white;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        .subtitle {
-            font-size: 1.2rem;
-            color: rgba(255,255,255,0.9);
-            margin-bottom: 3rem;
-        }
-        .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            backdrop-filter: blur(10px);
-        }
-        .button {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(238, 90, 36, 0.4);
-        }
-        .button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(238, 90, 36, 0.6);
-        }
-        .button:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        #chartContainer {
-            width: 100%;
-            height: 400px;
-            position: relative;
-        }
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 2rem;
-            gap: 1rem;
-        }
-        .stat-card {
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            padding: 1rem;
-            color: white;
-            flex: 1;
-        }
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-        .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-        .legend {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 1rem;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .legend-color {
-            width: 20px;
-            height: 4px;
-            border-radius: 2px;
-        }
-        .redis-color { background-color: #f87171; }
-        .elastic-color { background-color: #60a5fa; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1 class="title">⚡ Scaling Showdown</h1>
-        <p class="subtitle">Redis Cloud vs ElastiCache Performance Comparison</p>
-        
-        <div class="card">
-            <div id="chartContainer">
-                <canvas id="scalingChart"></canvas>
-            </div>
-            <div class="legend">
-                <div class="legend-item">
-                    <div class="legend-color redis-color"></div>
-                    <span>Redis Cloud</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color elastic-color"></div>
-                    <span>ElastiCache</span>
-                </div>
-            </div>
-        </div>
-        
-        <button id="startButton" class="button">🚀 Start Load Test</button>
-        
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-value" id="redisMax">0</div>
-                <div class="stat-label">Redis Peak QPS</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="elasticMax">0</div>
-                <div class="stat-label">ElastiCache Peak QPS</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="performance">0%</div>
-                <div class="stat-label">Redis Advantage</div>
-            </div>
-        </div>
+import { useEffect, useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+
+const dataTemplate = Array.from({ length: 30 }, (_, i) => ({
+  second: i,
+  redis: 0,
+  elastic: 0,
+}));
+
+export default function ScalingShowdown() {
+  const [data, setData] = useState(dataTemplate);
+  const [running, setRunning] = useState(false);
+
+  useEffect(() => {
+    if (!running) return;
+    let second = 0;
+    const interval = setInterval(() => {
+      second++;
+      if (second > 29) return clearInterval(interval);
+
+      setData((prev) => {
+        const updated = [...prev];
+        updated[second] = {
+          second,
+          // Redis curve: fast but non-linear (starts fast, slows a bit, then finishes fast)
+          redis: Math.min(100, Math.round(100 * (1 - Math.exp(-0.15 * second)))),
+          // Elastic: linear ramp then plateau
+          elastic: second < 10 ? second * 2 : second < 20 ? 20 : 25,
+        };
+        return updated;
+      });
+    }, 200);
+    return () => clearInterval(interval);
+  }, [running]);
+
+  return (
+    <div className="p-4 flex flex-col items-center gap-6">
+      <h1 className="text-2xl font-bold">Scaling Showdown: Redis vs ElastiCache</h1>
+      <Card className="w-full max-w-4xl">
+        <CardContent>
+          <LineChart width={700} height={300} data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="second" label={{ value: 'Seconds', position: 'insideBottom', offset: -5 }} />
+            <YAxis label={{ value: 'Throughput (QPS)', angle: -90, position: 'insideLeft' }} />
+            <Tooltip />
+            <Line type="monotone" dataKey="redis" stroke="#D82C20" strokeWidth={3} name="Redis Cloud" />
+            <Line type="monotone" dataKey="elastic" stroke="#B9C3CD" strokeWidth={3} name="ElastiCache" />
+          </LineChart>
+        </CardContent>
+      </Card>
+      <Button onClick={() => { setData(dataTemplate); setRunning(true); }}>Start Load Test</Button>
     </div>
-
-    <script>
-        let chart;
-        let isRunning = false;
-        let redisMax = 0;
-        let elasticMax = 0;
-        
-        // Initialize the chart
-        function initChart() {
-            const ctx = document.getElementById('scalingChart').getContext('2d');
-            
-            const data = {
-                labels: Array.from({length: 30}, (_, i) => i),
-                datasets: [
-                    {
-                        label: 'Redis Cloud',
-                        data: Array(30).fill(0),
-                        borderColor: '#f87171',
-                        backgroundColor: 'rgba(248, 113, 113, 0.1)',
-                        borderWidth: 3,
-                        fill: false,
-                        tension: 0.1,
-                        pointRadius: 0,
-                        pointHoverRadius: 6
-                    },
-                    {
-                        label: 'ElastiCache',
-                        data: Array(30).fill(0),
-                        borderColor: '#60a5fa',
-                        backgroundColor: 'rgba(96, 165, 250, 0.1)',
-                        borderWidth: 3,
-                        fill: false,
-                        tension: 0.1,
-                        pointRadius: 0,
-                        pointHoverRadius: 6
-                    }
-                ]
-            };
-
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: data,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Time (seconds)',
-                                font: { size: 14, weight: 'bold' }
-                            },
-                            grid: { color: 'rgba(0,0,0,0.1)' }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Throughput (QPS)',
-                                font: { size: 14, weight: 'bold' }
-                            },
-                            min: 0,
-                            max: 100,
-                            grid: { color: 'rgba(0,0,0,0.1)' }
-                        }
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Real-time Scaling Performance',
-                            font: { size: 16, weight: 'bold' }
-                        },
-                        legend: { display: false }
-                    },
-                    animation: { duration: 0 }
-                }
-            });
-        }
-
-        // Update stats
-        function updateStats() {
-            document.getElementById('redisMax').textContent = Math.round(redisMax);
-            document.getElementById('elasticMax').textContent = Math.round(elasticMax);
-            const advantage = elasticMax > 0 ? Math.round(((redisMax - elasticMax) / elasticMax) * 100) : 0;
-            document.getElementById('performance').textContent = advantage + '%';
-        }
-
-        // Start the load test animation
-        function startLoadTest() {
-            if (isRunning) return;
-            
-            isRunning = true;
-            redisMax = 0;
-            elasticMax = 0;
-            
-            const button = document.getElementById('startButton');
-            button.textContent = '⏳ Running Load Test...';
-            button.disabled = true;
-            
-            // Reset data
-            chart.data.datasets[0].data = Array(30).fill(0);
-            chart.data.datasets[1].data = Array(30).fill(0);
-            chart.update();
-            updateStats();
-            
-            let second = 0;
-            const interval = setInterval(() => {
-                second++;
-                if (second > 29) {
-                    clearInterval(interval);
-                    isRunning = false;
-                    button.textContent = '🚀 Start Load Test';
-                    button.disabled = false;
-                    return;
-                }
-                
-                // Update Redis data (fast scaling)
-                const redisValue = Math.min(100, second * 3.5);
-                chart.data.datasets[0].data[second] = redisValue;
-                redisMax = Math.max(redisMax, redisValue);
-                
-                // Update ElastiCache data (slow scaling with plateau)
-                const elasticValue = second < 10 ? second * 2 : second < 20 ? 20 : 25;
-                chart.data.datasets[1].data[second] = elasticValue;
-                elasticMax = Math.max(elasticMax, elasticValue);
-                
-                chart.update('none');
-                updateStats();
-            }, 200);
-        }
-
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            initChart();
-            document.getElementById('startButton').addEventListener('click', startLoadTest);
-        });
-    </script>
-</body>
-</html>
+  );
+}
