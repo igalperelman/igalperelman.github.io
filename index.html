@@ -386,6 +386,32 @@
             document.getElementById('elasticErrors').textContent = elasticErrors.toLocaleString();
         }
 
+        // Reset charts to initial state
+        function resetCharts() {
+            // Reset to initial steady state data with slight wiggle
+            const initialThroughput = Array.from({length: DATA_POINTS}, (_, i) =>
+                1000 + Math.sin(i * 0.3) * 5
+            );
+            const initialLatencyRedis = Array.from({length: DATA_POINTS}, (_, i) =>
+                2.0 + Math.sin(i * 0.2) * 0.1
+            );
+            const initialLatencyElastic = Array.from({length: DATA_POINTS}, (_, i) =>
+                2.2 + Math.sin(i * 0.25) * 0.1
+            );
+
+            // Reset throughput chart data
+            throughputChart.data.datasets[0].data = [...initialThroughput];
+            throughputChart.data.datasets[1].data = [...initialThroughput];
+
+            // Reset latency chart data
+            latencyChart.data.datasets[0].data = [...initialLatencyRedis];
+            latencyChart.data.datasets[1].data = [...initialLatencyElastic];
+
+            // Update charts
+            throughputChart.update();
+            latencyChart.update();
+        }
+
         // Start the scale up test
         function startScaleUpTest() {
             if (isRunning) return;
@@ -398,6 +424,8 @@
             button.textContent = '⏳ Running Scale Up Test...';
             button.disabled = true;
 
+            // Reset charts to initial state
+            resetCharts();
             updateErrors();
 
             let step = 0;
