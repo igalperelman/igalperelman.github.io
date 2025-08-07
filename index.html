@@ -1,23 +1,54 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.6">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 17.0px Times; color: #eae96f; -webkit-text-stroke: #eae96f}
-    span.s1 {font-kerning: none}
-  </style>
-</head>
-<body>
-<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
-<p class="p1"><span class="s1">&lt;html&gt;</span></p>
-<p class="p1"><span class="s1">&lt;body&gt;</span></p>
-<p class="p1"><span class="s1">&lt;h1&gt;Hello World&lt;/h1&gt;</span></p>
-<p class="p1"><span class="s1">&lt;p&gt;I'm hosted with GitHub Pages.&lt;/p&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
-</body>
-</html>
+import { useEffect, useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+
+const dataTemplate = Array.from({ length: 30 }, (_, i) => ({
+  second: i,
+  redis: 0,
+  elastic: 0,
+}));
+
+export default function ScalingShowdown() {
+  const [data, setData] = useState(dataTemplate);
+  const [running, setRunning] = useState(false);
+
+  useEffect(() => {
+    if (!running) return;
+    let second = 0;
+    const interval = setInterval(() => {
+      second++;
+      if (second > 29) return clearInterval(interval);
+
+      setData((prev) => {
+        const updated = [...prev];
+        updated[second] = {
+          second,
+          redis: Math.min(100, second * 3.5), // Fast scale
+          elastic: second < 10 ? second * 2 : second < 20 ? 20 : 25, // Slow and plateaus
+        };
+        return updated;
+      });
+    }, 200);
+    return () => clearInterval(interval);
+  }, [running]);
+
+  return (
+    <div className="p-4 flex flex-col items-center gap-6">
+      <h1 className="text-2xl font-bold">Scaling Showdown: Redis vs ElastiCache</h1>
+      <Card className="w-full max-w-4xl">
+        <CardContent>
+          <LineChart width={700} height={300} data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="second" label={{ value: 'Seconds', position: 'insideBottom', offset: -5 }} />
+            <YAxis label={{ value: 'Throughput (QPS)', angle: -90, position: 'insideLeft' }} />
+            <Tooltip />
+            <Line type="monotone" dataKey="redis" stroke="#f87171" strokeWidth={3} name="Redis Cloud" />
+            <Line type="monotone" dataKey="elastic" stroke="#60a5fa" strokeWidth={3} name="ElastiCache" />
+          </LineChart>
+        </CardContent>
+      </Card>
+      <Button onClick={() => { setData(dataTemplate); setRunning(true); }}>Start Load Test</Button>
+    </div>
+  );
+}
