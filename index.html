@@ -9,7 +9,7 @@
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #DC382D 0%, #A41E22 100%);
             min-height: 100vh;
             padding: 2rem;
         }
@@ -39,7 +39,7 @@
             backdrop-filter: blur(10px);
         }
         .button {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            background: linear-gradient(45deg, #DC382D, #A41E22);
             color: white;
             border: none;
             padding: 15px 30px;
@@ -48,11 +48,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(238, 90, 36, 0.4);
+            box-shadow: 0 4px 15px rgba(220, 56, 45, 0.4);
         }
         .button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(238, 90, 36, 0.6);
+            box-shadow: 0 6px 20px rgba(220, 56, 45, 0.6);
+            background: linear-gradient(45deg, #E74C3C, #DC382D);
         }
         .button:disabled {
             background: #6c757d;
@@ -103,13 +104,13 @@
             height: 4px;
             border-radius: 2px;
         }
-        .redis-color { background-color: #f87171; }
-        .elastic-color { background-color: #60a5fa; }
+        .redis-color { background-color: #DC382D; }
+        .elastic-color { background-color: #5A67D8; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="title">⚡ Scaling Showdown</h1>
+        <h1 class="title">⚡ Redis Scaling Showdown</h1>
         <p class="subtitle">Redis Cloud vs ElastiCache Performance Comparison</p>
         
         <div class="card">
@@ -162,8 +163,8 @@
                     {
                         label: 'Redis Cloud',
                         data: Array(30).fill(0),
-                        borderColor: '#f87171',
-                        backgroundColor: 'rgba(248, 113, 113, 0.1)',
+                        borderColor: '#DC382D',
+                        backgroundColor: 'rgba(220, 56, 45, 0.1)',
                         borderWidth: 3,
                         fill: false,
                         tension: 0.1,
@@ -173,8 +174,8 @@
                     {
                         label: 'ElastiCache',
                         data: Array(30).fill(0),
-                        borderColor: '#60a5fa',
-                        backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                        borderColor: '#5A67D8',
+                        backgroundColor: 'rgba(90, 103, 216, 0.1)',
                         borderWidth: 3,
                         fill: false,
                         tension: 0.1,
